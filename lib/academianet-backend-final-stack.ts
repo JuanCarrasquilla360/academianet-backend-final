@@ -25,6 +25,9 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
     const handleGetInstitutions = new FunctionConstruct(this, 'handleGetInstitutions');
     handleGetInstitutions.code("./functions/get_institutions");
     
+    // Set environment variables for the get_institutions function
+    handleGetInstitutions.handlerFn.addEnvironment('INSTITUTIONS_TABLE', this.institutionsTable.tableName);
+    
     // Create registration Lambda function
     const handleRegisterInstitution = new FunctionConstruct(this, 'handleRegisterInstitution');
     handleRegisterInstitution.code("./functions/register_institution");
@@ -41,6 +44,7 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
     
     // Grant permissions after setting up the API
     this.grantPermissions(handleRegisterInstitution);
+    this.grantDynamoPermissions(handleGetInstitutions);
   }
 
   grantPermissions(lambdaFunction: FunctionConstruct) {
@@ -53,6 +57,13 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
     // Grant Cognito permissions
     lambdaFunction.handlerFn.role?.addManagedPolicy({
       managedPolicyArn: 'arn:aws:iam::aws:policy/AmazonCognitoPowerUser'
+    });
+  }
+
+  grantDynamoPermissions(lambdaFunction: FunctionConstruct) {
+    // Grant DynamoDB read permissions
+    lambdaFunction.handlerFn.role?.addManagedPolicy({
+      managedPolicyArn: 'arn:aws:iam::aws:policy/AmazonDynamoDBReadOnlyAccess'
     });
   }
 

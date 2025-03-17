@@ -1,0 +1,10 @@
+{
+  "name": "get-institutions-function",
+  "version": "1.0.0",
+  "description": "Lambda function to get institutions",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.400.0",
+    "@aws-sdk/util-dynamodb": "^3.400.0"
+  }
+} 
