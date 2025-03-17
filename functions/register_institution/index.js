@@ -43,7 +43,9 @@ exports.handler = async (event, context) => {
     const institutionId = uuidv4();
     
     // Create user in Cognito
-    const username = correoElectronico.toLowerCase();
+    // Generate a username that is not an email format
+    const uniqueId = uuidv4().substring(0, 8);
+    const username = `user_${uniqueId}`;
     const fullName = `${nombre} ${apellido}`;
     
     try {
@@ -70,7 +72,7 @@ exports.handler = async (event, context) => {
             Value: nombreLegalInstitucion
           },
           {
-            Name: 'custom:institutionAbbreviation',
+            Name: 'custom:instAbbr',
             Value: abreviacionNombre
           }
         ]
@@ -98,6 +100,7 @@ exports.handler = async (event, context) => {
         legalName: nombreLegalInstitucion,
         abbreviation: abreviacionNombre,
         adminEmail: correoElectronico,
+        adminUsername: username,
         adminName: fullName,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -132,7 +135,8 @@ exports.handler = async (event, context) => {
     return formatResponse(200, { 
       message: 'Registro exitoso', 
       institutionId,
-      username
+      username,
+      email: correoElectronico
     });
     
   } catch (error) {
