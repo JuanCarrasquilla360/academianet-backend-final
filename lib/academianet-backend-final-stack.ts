@@ -80,16 +80,46 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
       this.institutionsTable.tableName
     );
 
-    // Set up API endpoints
-    api.cors();
+    // Create resend verification code Lambda function
+    const handleResendVerificationCode = new FunctionConstruct(
+      this,
+      "handleResendVerificationCode"
+    );
+    handleResendVerificationCode.useLayer('sdkLayer');
+    handleResendVerificationCode.code("./functions/resend_verification_code");
+
+    // Set environment variables for the resend verification function
+    handleResendVerificationCode.handlerFn.addEnvironment(
+      "USER_POOL_CLIENT_ID",
+      this.userPoolClient.userPoolClientId
+    );
+
+    // Set up API endpoints with enhanced CORS
+    api.cors();  // Enable CORS
+    
+    // Create routes
     api.get("/institutions")?.fn(handleGetInstitutions.handlerFn);
     api.post("/register")?.fn(handleRegisterInstitution.handlerFn);
     api.post("/verify-email")?.fn(handleVerifyEmail.handlerFn);
+    api.post("/resend-verification-code")?.fn(handleResendVerificationCode.handlerFn);
+    
+    // Also explicitly add OPTIONS methods to ensure proper CORS preflight handling
+    api.options("/institutions");
+    api.options("/register");
+    api.options("/verify-email");
+    api.options("/resend-verification-code");
 
     // Grant permissions after setting up the API
     this.grantPermissions(handleRegisterInstitution);
     this.grantPermissions(handleVerifyEmail);
+    this.grantPermissions(handleResendVerificationCode);
     this.grantDynamoPermissions(handleGetInstitutions);
+    
+    // Output the API Gateway endpoint URL
+    new cdk.CfnOutput(this, 'ApiEndpoint', {
+      value: api.api.url,  // Access the underlying API Gateway instance
+      description: 'API Gateway endpoint URL',
+    });
   }
 
   grantPermissions(lambdaFunction: FunctionConstruct) {
