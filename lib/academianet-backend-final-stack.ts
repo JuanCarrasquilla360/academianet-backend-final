@@ -45,7 +45,7 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
       this,
       "handleRegisterInstitution"
     );
-    handleRegisterInstitution.useLayer('sdkLayer')
+    handleRegisterInstitution.useLayer('sdkLayer');
     handleRegisterInstitution.code("./functions/register_institution");
 
     // Set environment variables for the Lambda function
@@ -62,13 +62,33 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
       this.institutionsTable.tableName
     );
 
+    // Create email verification Lambda function
+    const handleVerifyEmail = new FunctionConstruct(
+      this,
+      "handleVerifyEmail"
+    );
+    handleVerifyEmail.useLayer('sdkLayer');
+    handleVerifyEmail.code("./functions/verify_email");
+
+    // Set environment variables for the verification function
+    handleVerifyEmail.handlerFn.addEnvironment(
+      "USER_POOL_CLIENT_ID",
+      this.userPoolClient.userPoolClientId
+    );
+    handleVerifyEmail.handlerFn.addEnvironment(
+      "INSTITUTIONS_TABLE",
+      this.institutionsTable.tableName
+    );
+
     // Set up API endpoints
     api.cors();
     api.get("/institutions")?.fn(handleGetInstitutions.handlerFn);
     api.post("/register")?.fn(handleRegisterInstitution.handlerFn);
+    api.post("/verify-email")?.fn(handleVerifyEmail.handlerFn);
 
     // Grant permissions after setting up the API
     this.grantPermissions(handleRegisterInstitution);
+    this.grantPermissions(handleVerifyEmail);
     this.grantDynamoPermissions(handleGetInstitutions);
   }
 
@@ -105,6 +125,15 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
       indexName: "institutionNameIndex",
       partitionKey: {
         name: "institutionName",
+        type: dynamodb.AttributeType.STRING,
+      },
+    });
+
+    // Add GSI for querying by admin username
+    this.institutionsTable.addGlobalSecondaryIndex({
+      indexName: "adminUsernameIndex",
+      partitionKey: {
+        name: "adminUsername",
         type: dynamodb.AttributeType.STRING,
       },
     });

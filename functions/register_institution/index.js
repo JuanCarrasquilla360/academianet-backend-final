@@ -1,7 +1,7 @@
-const { DynamoDBClient, PutItemCommand } = require('@aws-sdk/client-dynamodb');
-const { CognitoIdentityProviderClient, SignUpCommand, AdminConfirmSignUpCommand, AdminUpdateUserAttributesCommand } = require('@aws-sdk/client-cognito-identity-provider');
+const { DynamoDBClient, PutItemCommand, QueryCommand } = require('@aws-sdk/client-dynamodb');
+const { CognitoIdentityProviderClient, SignUpCommand, AdminConfirmSignUpCommand, AdminUpdateUserAttributesCommand, ListUsersCommand } = require('@aws-sdk/client-cognito-identity-provider');
 const { v4: uuidv4 } = require('uuid');
-const { marshall } = require('@aws-sdk/util-dynamodb');
+const { marshall, unmarshall } = require('@aws-sdk/util-dynamodb');
 
 // Initialize clients
 const dynamoClient = new DynamoDBClient();
@@ -37,6 +37,43 @@ exports.handler = async (event, context) => {
       return formatResponse(400, { 
         message: 'Todos los campos son requeridos' 
       });
+    }
+    
+    // Verificar si el correo electrónico ya está registrado
+    try {
+      const existingUsers = await cognitoClient.send(new ListUsersCommand({
+        UserPoolId: USER_POOL_ID,
+        Filter: `email = "${correoElectronico}"`
+      }));
+      
+      if (existingUsers.Users && existingUsers.Users.length > 0) {
+        return formatResponse(409, {
+          message: 'El correo electrónico ya está registrado. Por favor utiliza otro correo o recupera tu contraseña.'
+        });
+      }
+    } catch (error) {
+      console.error('Error verificando correo existente:', error);
+      // Continuamos con el proceso aunque haya error en la verificación
+    }
+    
+    // También verificamos si este correo ya está asociado a una institución en DynamoDB
+    try {
+      const existingInstitutions = await dynamoClient.send(new QueryCommand({
+        TableName: INSTITUTIONS_TABLE,
+        FilterExpression: 'adminEmail = :email',
+        ExpressionAttributeValues: marshall({
+          ':email': correoElectronico
+        })
+      }));
+      
+      if (existingInstitutions.Items && existingInstitutions.Items.length > 0) {
+        return formatResponse(409, {
+          message: 'Este correo electrónico ya está asociado a una institución registrada.'
+        });
+      }
+    } catch (error) {
+      console.error('Error verificando correo en DynamoDB:', error);
+      // Continuamos con el proceso aunque haya error en la verificación
     }
     
     // Generate a unique ID for the institution
@@ -78,11 +115,11 @@ exports.handler = async (event, context) => {
         ]
       }));
       
-      // Auto-confirm the user (in a production environment, you might want to send a verification email)
-      await cognitoClient.send(new AdminConfirmSignUpCommand({
-        UserPoolId: USER_POOL_ID,
-        Username: username
-      }));
+      // Ya no auto-confirmamos al usuario, debe verificar su correo
+      // await cognitoClient.send(new AdminConfirmSignUpCommand({
+      //   UserPoolId: USER_POOL_ID,
+      //   Username: username
+      // }));
       
     } catch (error) {
       console.error('Error creating user in Cognito:', error);
@@ -102,6 +139,7 @@ exports.handler = async (event, context) => {
         adminEmail: correoElectronico,
         adminUsername: username,
         adminName: fullName,
+        isVerified: false, // Inicialmente no verificada
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -133,7 +171,7 @@ exports.handler = async (event, context) => {
     
     // Return success response
     return formatResponse(200, { 
-      message: 'Registro exitoso', 
+      message: 'Registro exitoso. Se ha enviado un código de verificación a tu correo electrónico.', 
       institutionId,
       username,
       email: correoElectronico
