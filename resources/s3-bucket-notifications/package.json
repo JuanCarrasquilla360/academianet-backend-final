@@ -1,0 +1,9 @@
+{
+  "name": "s3-bucket-notification-custom-resource",
+  "version": "1.0.0",
+  "description": "Custom resource for S3 bucket notifications and Lambda permissions",
+  "main": "index.js",
+  "dependencies": {
+    "aws-sdk": "^2.1048.0"
+  }
+} 

@@ -1,0 +1,8 @@
+{
+  "name": "xlsx-layer",
+  "version": "1.0.0",
+  "description": "Lambda layer for xlsx library",
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  }
+} 
