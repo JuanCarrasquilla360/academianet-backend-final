@@ -152,6 +152,7 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
     this.grantPermissions(handleRegisterInstitution);
     this.grantPermissions(handleVerifyEmail);
     this.grantPermissions(handleResendVerificationCode);
+    this.grantPermissions(handleAskLlm);
     this.grantDynamoPermissions(handleGetInstitutions);
 
     // Output the API Gateway endpoint URL
