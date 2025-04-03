@@ -101,6 +101,35 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
     const handleAskLlm = new FunctionConstruct(this, "handleAskLlm");
     handleAskLlm.useLayer("sdkLayer");
     handleAskLlm.code("./functions/ask_llm");
+
+    // Create new Lambda function for getting institutions from Excel data
+    const handleGetExcelInstitutions = new FunctionConstruct(
+      this,
+      "handleGetExcelInstitutions"
+    );
+    handleGetExcelInstitutions.useLayer("sdkLayer");
+    handleGetExcelInstitutions.code("./functions/get_excel_institutions");
+
+    // Set environment variables for the get_excel_institutions function
+    handleGetExcelInstitutions.handlerFn.addEnvironment(
+      "INSTITUTIONS_TABLE",
+      "Instituciones" // This is the table name from excel_to_dynamo.js
+    );
+
+    // Create new Lambda function for getting academic programs from Excel data
+    const handleGetAcademicPrograms = new FunctionConstruct(
+      this,
+      "handleGetAcademicPrograms"
+    );
+    handleGetAcademicPrograms.useLayer("sdkLayer");
+    handleGetAcademicPrograms.code("./functions/get_academic_programs");
+
+    // Set environment variables for the get_academic_programs function
+    handleGetAcademicPrograms.handlerFn.addEnvironment(
+      "PROGRAMS_TABLE",
+      "ProgramasAcademicos" // This is the table name from excel_to_dynamo.js
+    );
+
     // Add this near your other Lambda function configurations
     const bedrockPolicy = new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
@@ -140,6 +169,8 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
       .post("/resend-verification-code")
       ?.fn(handleResendVerificationCode.handlerFn);
     api.post("/ask-llm")?.fn(handleAskLlm.handlerFn);
+    api.get("/excel-institutions")?.fn(handleGetExcelInstitutions.handlerFn);
+    api.get("/academic-programs")?.fn(handleGetAcademicPrograms.handlerFn);
 
     // Also explicitly add OPTIONS methods to ensure proper CORS preflight handling
     api.options("/institutions");
@@ -147,6 +178,8 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
     api.options("/verify-email");
     api.options("/resend-verification-code");
     api.options("/ask-llm");
+    api.options("/excel-institutions");
+    api.options("/academic-programs");
 
     // Grant permissions after setting up the API
     this.grantPermissions(handleRegisterInstitution);
@@ -154,6 +187,8 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
     this.grantPermissions(handleResendVerificationCode);
     this.grantPermissions(handleAskLlm);
     this.grantDynamoPermissions(handleGetInstitutions);
+    this.grantDynamoPermissions(handleGetExcelInstitutions);
+    this.grantDynamoPermissions(handleGetAcademicPrograms);
 
     // Output the API Gateway endpoint URL
     new cdk.CfnOutput(this, "ApiEndpoint", {
