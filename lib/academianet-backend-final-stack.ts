@@ -102,6 +102,16 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
     handleAskLlm.useLayer("sdkLayer");
     handleAskLlm.code("./functions/ask_llm");
 
+    // Configurar variables de entorno para el almacenamiento de conversaciones
+    handleAskLlm.handlerFn.addEnvironment(
+      "CONVERSATION_STORAGE_TYPE",
+      "dynamodb" // Usar DynamoDB para almacenamiento permanente
+    );
+    handleAskLlm.handlerFn.addEnvironment(
+      "CONVERSATION_TABLE",
+      "Conversations"
+    );
+
     // Create new Lambda function for getting institutions from Excel data
     const handleGetExcelInstitutions = new FunctionConstruct(
       this,
@@ -255,6 +265,14 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
       }
     );
 
+    // Create DynamoDB table for conversations
+    const conversationsTable = new dynamodb.Table(this, "ConversationsTable", {
+      tableName: "Conversations",
+      partitionKey: { name: "id", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
     // Output the table names
     new cdk.CfnOutput(this, "institutions-table-name", {
       value: this.institutionsTable.tableName,
@@ -264,6 +282,11 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
     new cdk.CfnOutput(this, "instituciones-snies-table-name", {
       value: this.institutionsSniesTable.tableName,
       key: "institucionesSniesTableName",
+    });
+
+    new cdk.CfnOutput(this, "conversations-table-name", {
+      value: conversationsTable.tableName,
+      key: "conversationsTableName",
     });
   }
 
