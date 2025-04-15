@@ -120,15 +120,15 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
     // Set environment variables for the WhatsApp chatbot function (to be set in the deployment process)
     handleWhatsappChatbot.handlerFn.addEnvironment(
       "TWILIO_ACCOUNT_SID",
-      // process.env.TWILIO_ACCOUNT_SID || "AC04ab387adc4bff0b4c4f53e2c63e3e6e"
+      process.env.TWILIO_ACCOUNT_SID || "AC04ab387adc4bff0b4c4f53e2c63e3e6e"
     );
     handleWhatsappChatbot.handlerFn.addEnvironment(
       "TWILIO_AUTH_TOKEN",
-      // process.env.TWILIO_AUTH_TOKEN || "bcf328f3d82012a351cd27262cde59c3"
+      process.env.TWILIO_AUTH_TOKEN || "bcf328f3d82012a351cd27262cde59c3"
     );
     handleWhatsappChatbot.handlerFn.addEnvironment(
       "TWILIO_PHONE_NUMBER",
-      // process.env.TWILIO_PHONE_NUMBER || "+14155238886"
+      process.env.TWILIO_PHONE_NUMBER || "+14155238886"
     );
 
     // Create new Lambda function for getting institutions from Excel data
