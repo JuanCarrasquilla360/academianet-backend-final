@@ -1,0 +1,10 @@
+{
+  "anthropic_version": "bedrock-2023-05-31",
+  "messages": [
+    {
+      "role": "user",
+      "content": "¿Qué carreras son buenas para alguien interesado en ciencias de la computación?"
+    }
+  ],
+  "system": "Eres un asistente académico especializado en orientación académica para estudiantes en Colombia."
+} 

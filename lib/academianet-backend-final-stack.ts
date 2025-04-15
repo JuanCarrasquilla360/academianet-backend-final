@@ -112,6 +112,25 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
       "Conversations"
     );
 
+    // Create WhatsApp chatbot Lambda function
+    const handleWhatsappChatbot = new FunctionConstruct(this, "handleWhatsappChatbot");
+    handleWhatsappChatbot.useLayer("sdkLayer");
+    handleWhatsappChatbot.code("./functions/whatsapp_chatbot");
+    
+    // Set environment variables for the WhatsApp chatbot function (to be set in the deployment process)
+    handleWhatsappChatbot.handlerFn.addEnvironment(
+      "TWILIO_ACCOUNT_SID",
+      process.env.TWILIO_ACCOUNT_SID || "AC04ab387adc4bff0b4c4f53e2c63e3e6e"
+    );
+    handleWhatsappChatbot.handlerFn.addEnvironment(
+      "TWILIO_AUTH_TOKEN",
+      process.env.TWILIO_AUTH_TOKEN || "bcf328f3d82012a351cd27262cde59c3"
+    );
+    handleWhatsappChatbot.handlerFn.addEnvironment(
+      "TWILIO_PHONE_NUMBER",
+      process.env.TWILIO_PHONE_NUMBER || "+14155238886"
+    );
+
     // Create new Lambda function for getting institutions from Excel data
     const handleGetExcelInstitutions = new FunctionConstruct(
       this,
@@ -156,6 +175,9 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
     });
 
     handleAskLlm.handlerFn.addToRolePolicy(bedrockPolicy as any);
+    
+    // Also add Bedrock permissions to WhatsApp chatbot function
+    handleWhatsappChatbot.handlerFn.addToRolePolicy(bedrockPolicy as any);
 
     // If you need to use specific models, you can also be more explicit with the ARNs:
     const specificModelPolicy = new iam.PolicyStatement({
@@ -167,6 +189,7 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
     });
 
     handleAskLlm.handlerFn.addToRolePolicy(specificModelPolicy as any);
+    handleWhatsappChatbot.handlerFn.addToRolePolicy(specificModelPolicy as any);
 
     // Set up API endpoints with enhanced CORS
     api.cors(); // Enable CORS
@@ -181,6 +204,7 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
     api.post("/ask-llm")?.fn(handleAskLlm.handlerFn);
     api.get("/excel-institutions")?.fn(handleGetExcelInstitutions.handlerFn);
     api.get("/academic-programs")?.fn(handleGetAcademicPrograms.handlerFn);
+    api.post("/whatsapp-webhook")?.fn(handleWhatsappChatbot.handlerFn);
 
     // Also explicitly add OPTIONS methods to ensure proper CORS preflight handling
     api.options("/institutions");
@@ -190,12 +214,14 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
     api.options("/ask-llm");
     api.options("/excel-institutions");
     api.options("/academic-programs");
+    api.options("/whatsapp-webhook");
 
     // Grant permissions after setting up the API
     this.grantPermissions(handleRegisterInstitution);
     this.grantPermissions(handleVerifyEmail);
     this.grantPermissions(handleResendVerificationCode);
     this.grantPermissions(handleAskLlm);
+    this.grantPermissions(handleWhatsappChatbot);
     this.grantDynamoPermissions(handleGetInstitutions);
     this.grantDynamoPermissions(handleGetExcelInstitutions);
     this.grantDynamoPermissions(handleGetAcademicPrograms);
@@ -204,6 +230,12 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
     new cdk.CfnOutput(this, "ApiEndpoint", {
       value: api.api.url, // Access the underlying API Gateway instance
       description: "API Gateway endpoint URL",
+    });
+    
+    // Output the WhatsApp webhook URL
+    new cdk.CfnOutput(this, "WhatsAppWebhookUrl", {
+      value: `${api.api.url}whatsapp-webhook`,
+      description: "WhatsApp webhook URL for Twilio configuration",
     });
   }
 
