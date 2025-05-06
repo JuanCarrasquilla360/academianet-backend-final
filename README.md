@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides details on the `/excel-institutions` and `/academic-programs` endpoints of the API, which allow users to retrieve institutions and academic programs from their respective DynamoDB tables. Both endpoints support filtering and pagination.
+This document provides details on the `/excel-institutions`, `/academic-programs`, and `/submit-application` endpoints of the API, which allow users to retrieve institutions and academic programs from their respective DynamoDB tables, as well as submit application forms. All endpoints support proper CORS for web applications.
 
 ## Endpoints
 
@@ -154,6 +154,69 @@ You can use the following query parameters to filter and paginate the results:
 }
 ```
 
+### 3. Application Submission Endpoint
+
+- **URL**: `/submit-application`
+- **Method**: `POST`
+- **Description**: Submits an application form for a specific academic program.
+
+#### Request Body
+
+The request body must be a JSON object with the following fields:
+
+| Field         | Type   | Required | Description                                       |
+|---------------|--------|----------|---------------------------------------------------|
+| `nombre`      | String | Yes      | First name of the applicant                       |
+| `apellido`    | String | Yes      | Last name of the applicant                        |
+| `email`       | String | Yes      | Email address of the applicant                    |
+| `telefono`    | String | Yes      | Phone number of the applicant                     |
+| `programId`   | String | Yes      | ID of the academic program being applied for      |
+| `programName` | String | Yes      | Name of the academic program being applied for    |
+
+#### Example Request
+
+```json
+{
+  "nombre": "Juan",
+  "apellido": "Pérez",
+  "email": "juan.perez@ejemplo.com",
+  "telefono": "3001234567",
+  "programId": "prog_12345678",
+  "programName": "MAESTRIA EN FINANZAS - FUNDACION UNIVERSITARIA ESUMER"
+}
+```
+
+#### Example Response (201 Created)
+
+```json
+{
+  "message": "Solicitud registrada exitosamente. Nos comunicaremos contigo pronto.",
+  "applicationId": "app_abcdef1234567890",
+  "success": true
+}
+```
+
+#### Error Responses
+
+- **400 Bad Request**: Missing required fields
+```json
+{
+  "message": "Faltan campos obligatorios. Por favor, complete todos los campos requeridos: nombre, apellido, email, telefono, programId.",
+  "success": false
+}
+```
+
+- **500 Internal Server Error**: Server-side error
+```json
+{
+  "message": "Error interno al procesar la solicitud",
+  "error": "Detailed error message",
+  "success": false,
+  "time": "2023-06-05T15:30:45.123Z",
+  "requestId": "c6af9ac6-7b61-11e6-9a41-93e8deadbeef"
+}
+```
+
 ## Notes
 
 - Ensure that the API Gateway is properly configured to handle CORS if you are calling these endpoints from a web application.
@@ -161,4 +224,4 @@ You can use the following query parameters to filter and paginate the results:
 
 ## Conclusion
 
-These endpoints provide a flexible way to access institutions and academic programs stored in their respective DynamoDB tables, allowing for efficient data retrieval based on various criteria. Use the provided examples to integrate this functionality into your application.
+These endpoints provide a flexible way to access institutions and academic programs stored in their respective DynamoDB tables, allowing for efficient data retrieval based on various criteria and submitting applications. Use the provided examples to integrate this functionality into your application.

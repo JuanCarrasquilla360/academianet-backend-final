@@ -191,8 +191,17 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
     handleAskLlm.handlerFn.addToRolePolicy(specificModelPolicy as any);
     handleWhatsappChatbot.handlerFn.addToRolePolicy(specificModelPolicy as any);
 
+    const handleSubmitApplication = new FunctionConstruct(this, "handleSubmitApplication");
+    handleSubmitApplication.useLayer("sdkLayer");
+    handleSubmitApplication.code("./functions/submit_application");
+
+    handleSubmitApplication.handlerFn.addEnvironment(
+      "APPLICATIONS_TABLE",
+      "Applications"
+    );
+
     // Set up API endpoints with enhanced CORS
-    api.cors(); // Enable CORS
+    api.cors(); 
 
     // Create routes
     api.get("/institutions")?.fn(handleGetInstitutions.handlerFn);
@@ -205,6 +214,8 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
     api.get("/excel-institutions")?.fn(handleGetExcelInstitutions.handlerFn);
     api.get("/academic-programs")?.fn(handleGetAcademicPrograms.handlerFn);
     api.post("/whatsapp-webhook")?.fn(handleWhatsappChatbot.handlerFn);
+    // Add new endpoint for application submissions
+    api.post("/submit-application")?.fn(handleSubmitApplication.handlerFn);
 
     // Also explicitly add OPTIONS methods to ensure proper CORS preflight handling
     api.options("/institutions");
@@ -215,6 +226,7 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
     api.options("/excel-institutions");
     api.options("/academic-programs");
     api.options("/whatsapp-webhook");
+    api.options("/submit-application");
 
     // Grant permissions after setting up the API
     this.grantPermissions(handleRegisterInstitution);
@@ -222,6 +234,7 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
     this.grantPermissions(handleResendVerificationCode);
     this.grantPermissions(handleAskLlm);
     this.grantPermissions(handleWhatsappChatbot);
+    this.grantPermissions(handleSubmitApplication);
     this.grantDynamoPermissions(handleGetInstitutions);
     this.grantDynamoPermissions(handleGetExcelInstitutions);
     this.grantDynamoPermissions(handleGetAcademicPrograms);
@@ -305,6 +318,23 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
+    // Create DynamoDB table for applications
+    const applicationsTable = new dynamodb.Table(this, "ApplicationsTable", {
+      tableName: "Applications",
+      partitionKey: { name: "id", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    // Add GSI for querying applications by programId
+    applicationsTable.addGlobalSecondaryIndex({
+      indexName: "programIdIndex",
+      partitionKey: {
+        name: "programId",
+        type: dynamodb.AttributeType.STRING,
+      },
+    });
+
     // Output the table names
     new cdk.CfnOutput(this, "institutions-table-name", {
       value: this.institutionsTable.tableName,
@@ -319,6 +349,11 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
     new cdk.CfnOutput(this, "conversations-table-name", {
       value: conversationsTable.tableName,
       key: "conversationsTableName",
+    });
+
+    new cdk.CfnOutput(this, "applications-table-name", {
+      value: applicationsTable.tableName,
+      key: "applicationsTableName",
     });
   }
 
