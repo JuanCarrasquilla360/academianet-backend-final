@@ -20,6 +20,7 @@
     "typescript": "~5.4.5"
   },
   "dependencies": {
+    "@aws-sdk/client-ses": "^3.806.0",
     "aws-cdk-lib": "2.147.3",
     "constructs": "^10.0.0",
     "devarchy-cdk": "^0.2.7",

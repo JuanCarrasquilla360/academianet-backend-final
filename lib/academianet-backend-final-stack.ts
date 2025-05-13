@@ -200,6 +200,18 @@ export class AcademianetBackendFinalStack extends cdk.Stack {
       "Applications"
     );
 
+    // Add SES permissions for sending emails
+    const sesPolicy = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
+        "ses:SendEmail",
+        "ses:SendRawEmail"
+      ],
+      resources: ["*"]
+    });
+
+    handleSubmitApplication.handlerFn.addToRolePolicy(sesPolicy as any);
+
     // Set up API endpoints with enhanced CORS
     api.cors(); 
 

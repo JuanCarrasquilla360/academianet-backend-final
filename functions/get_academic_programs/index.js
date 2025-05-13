@@ -28,6 +28,7 @@ exports.handler = async (event, context) => {
     const modalidad = queryParams.modalidad;
     const institucionId = queryParams.institucionId;
     const municipio = queryParams.municipio;
+    const duracionPrograma = queryParams.duracionPrograma; // 'corto', 'medio', 'largo'
     
     // Base scan params
     const params = {
@@ -62,6 +63,22 @@ exports.handler = async (event, context) => {
     if (municipio) {
       expressionParts.push("municipio = :municipio");
       expressionAttributeValues[":municipio"] = { S: municipio };
+    }
+    
+    // Add duration filter logic
+    if (duracionPrograma) {
+      if (duracionPrograma === "corto") {
+        expressionParts.push("duracion <= :maxCorto");
+        expressionAttributeValues[":maxCorto"] = { N: "2" }; // Up to 1 year
+      } else if (duracionPrograma === "medio") {
+        expressionParts.push("duracion > :minMedio AND duracion <= :maxMedio");
+        expressionAttributeValues[":minMedio"] = { N: "2" };
+        expressionAttributeValues[":maxMedio"] = { N: "6" }; // 1 to 3 years
+      } else if (duracionPrograma === "largo") {
+        expressionParts.push("duracion > :minLargo");
+        expressionAttributeValues[":minLargo"] = { N: "6" }; // More than 3 years
+      }
+      // Add more validation or default case if needed
     }
     
     if (expressionParts.length > 0) {
@@ -102,7 +119,8 @@ exports.handler = async (event, context) => {
           nivel,
           modalidad,
           institucionId,
-          municipio
+          municipio,
+          duracionPrograma
         }
       }),
     };
@@ -137,6 +155,13 @@ exports.handler = async (event, context) => {
         message: errorMessage,
         error: error.message || "Error desconocido",
         // Include request info for debugging
+        filtersApplied: { // Also useful to show applied filters on error
+          nivel,
+          modalidad,
+          institucionId,
+          municipio,
+          duracionPrograma
+        },
         time: new Date().toISOString(),
         requestId: event.requestContext?.requestId
       }),

@@ -1,9 +1,11 @@
 const { DynamoDBClient, PutItemCommand } = require('@aws-sdk/client-dynamodb');
 const { marshall } = require('@aws-sdk/util-dynamodb');
 const { v4: uuidv4 } = require('uuid');
+const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
 
-// Initialize DynamoDB client
+// Initialize clients
 const dynamoClient = new DynamoDBClient();
+const sesClient = new SESClient();
 
 // Environment variables
 const APPLICATIONS_TABLE = process.env.APPLICATIONS_TABLE || "Applications";
@@ -59,6 +61,46 @@ exports.handler = async (event, context) => {
     console.log("Storing application in DynamoDB:", JSON.stringify(params, null, 2));
     
     await dynamoClient.send(new PutItemCommand(params));
+
+    // Send confirmation email
+    const emailParams = {
+      Source: 'juancarrasquilla135219@correo.itm.edu.co', // Replace with your verified SES email
+      Destination: {
+        ToAddresses: [email]
+      },
+      Message: {
+        Subject: {
+          Data: 'Confirmación de Solicitud - AcademiaNet'
+        },
+        Body: {
+          Html: {
+            Data: `
+              <html>
+                <body>
+                  <h2>¡Gracias por tu interés en ${programName}!</h2>
+                  <p>Hola ${nombre} ${apellido},</p>
+                  <p>Hemos recibido tu solicitud para el programa ${programName}.</p>
+                  <p>Tu número de solicitud es: <strong>${applicationId}</strong></p>
+                  <p>Nos pondremos en contacto contigo pronto para continuar con el proceso.</p>
+                  <p>Si tienes alguna pregunta, no dudes en contactarnos.</p>
+                  <br>
+                  <p>Saludos cordiales,</p>
+                  <p>El equipo de AcademiaNet</p>
+                </body>
+              </html>
+            `
+          }
+        }
+      }
+    };
+
+    try {
+      await sesClient.send(new SendEmailCommand(emailParams));
+      console.log("Confirmation email sent successfully");
+    } catch (emailError) {
+      console.error("Error sending confirmation email:", emailError);
+      // Continue with the response even if email fails
+    }
     
     // Return success response
     return {

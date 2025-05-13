@@ -6,13 +6,19 @@
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.400.0",
     "@aws-sdk/client-dynamodb": "^3.400.0",
+    "@aws-sdk/client-ses": "^3.806.0",
     "@aws-sdk/util-dynamodb": "^3.400.0",
     "uuid": "^9.0.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["aws", "lambda", "layer", "sdk"],
+  "keywords": [
+    "aws",
+    "lambda",
+    "layer",
+    "sdk"
+  ],
   "author": "",
   "license": "ISC"
-} 
+}
